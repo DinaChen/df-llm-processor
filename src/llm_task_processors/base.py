@@ -1,10 +1,10 @@
 # The 
-# A llm-processor works on a dataframe, take one or multiple columns
+# A LLmTaskProcessor works on a dataframe, take one or multiple columns
 # Perform pre-processing then run llm to get response
 # Return the same dataframe with appended new result column. 
 from abc import ABC, abstractmethod
 
-class LlmProcessor(ABC):
+class LlmTaskProcessor(ABC):
 
     @abstractmethod
     def preprocess(self, df, *args, **kwargs):

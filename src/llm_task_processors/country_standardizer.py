@@ -1,5 +1,5 @@
 
-from src.llm_processors.base import LlmProcessor
+from src.llm_task_processors.base import LlmTaskProcessor
 import pandas as pd
 from pathlib import Path
 from typing import Union
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 from utils.country_name_io import *
 
 
-class CountryNameStandardizer(LlmProcessor):
+class CountryNameStandardizer(LlmTaskProcessor):
     
     def __init__(
         self,
@@ -72,6 +72,9 @@ class CountryNameStandardizer(LlmProcessor):
 
     
     def llm_process(self):
+
+        # initialize a model
+        # how? 
         # run one batch
         # return result list
         pass
