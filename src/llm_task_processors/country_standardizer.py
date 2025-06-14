@@ -19,7 +19,7 @@ class CountryNameStandardizer(LlmTaskProcessor):
     
     def __init__(
         self,
-        df: pd.DataFrame,
+        df: Union[Path, pd.DataFrame],
         prompt: str,
         std_country_set: Union[Path, set],
         replacement_maps: Union[Path, dict] = None,
@@ -35,7 +35,12 @@ class CountryNameStandardizer(LlmTaskProcessor):
             replacement_maps: Dictionary or file path containing country name replacement mappings
             frequent_unsupported: List or file path of frequently seen unsupported country names.
         """
-        self.df = df
+        task_name = f'Country_std_data{len(df)}' if isinstance(df, pd.DataFrame) else f'Country_std_{df.stem}'
+
+        self.output_dir = Path("outputs") / task_name  
+        self.output_dir.mkdir(parents=True, exist_ok=True)  
+
+        self.df = df if isinstance(df, pd.DataFrame) else pd.read_csv(df, index_col=False)
         self.prompt = prompt
         self.std_country_set = read_standard_country(std_country_set)
         self.replacement_maps = read_dicts_from_yaml(replacement_maps)
@@ -75,16 +80,20 @@ class CountryNameStandardizer(LlmTaskProcessor):
 
     
     def llm_process(self, llm):
-        # better task name
+
+        temp_path = self.output_dir / "llm_process_temp.csv"
         self.to_process_df, temp_path = task_run(self.to_process_df, 
                                                  llm, 
                                                  self.prompt, 
                                                  'firm_export_country', 
                                                  'country_clean',
-                                                 'temp.csv')
+                                                 temp_path)  
 
 
         self.to_remove.append(temp_path)
+
+
+
 
     def postprocess(self):
         pass
