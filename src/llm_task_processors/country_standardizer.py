@@ -1,5 +1,6 @@
 
 from src.llm_task_processors.base import LlmTaskProcessor
+from utils.task_runner import task_run
 import pandas as pd
 from pathlib import Path
 from typing import Union
@@ -43,6 +44,8 @@ class CountryNameStandardizer(LlmTaskProcessor):
         self.valid_already_df = None
         self.to_process_df = self.df
 
+        self.to_remove=[]
+
     
     def preprocess(self, input_column: str = 'firm_export_country'):
         """
@@ -71,13 +74,17 @@ class CountryNameStandardizer(LlmTaskProcessor):
         logger.info(f'Country name standardization: {len(self.to_process_df)} out of {len(self.df)} data need processing')
 
     
-    def llm_process(self):
+    def llm_process(self, llm):
+        # better task name
+        self.to_process_df, temp_path = task_run(self.to_process_df, 
+                                                 llm, 
+                                                 self.prompt, 
+                                                 'firm_export_country', 
+                                                 'country_clean',
+                                                 'temp.csv')
 
-        # initialize a model
-        # how? 
-        # run one batch
-        # return result list
-        pass
+
+        self.to_remove.append(temp_path)
 
     def postprocess(self):
         pass
