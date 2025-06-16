@@ -4,7 +4,7 @@ from tqdm import tqdm
 from models.vllm_openai_compat_model import VLLMOpenAICompatModel
 
 
-def task_run(df : pd.DataFrame, 
+def task_run(df_origin : pd.DataFrame, 
              llm : VLLMOpenAICompatModel, 
              prompt :str, 
              input_column : str, 
@@ -12,6 +12,8 @@ def task_run(df : pd.DataFrame,
              temp_path : str):
     
     """Process dataframe with LLM, saving progress incrementally"""
+
+    df = df_origin.copy()
     
     # Load or initialize temporary results
     if os.path.exists(temp_path):
@@ -25,6 +27,8 @@ def task_run(df : pd.DataFrame,
     for index, row in tqdm(df.iterrows(), total=len(df)):
 
         if index in processed_indices:
+            value = temp_df.loc[temp_df['index'] == index, new_column].iloc[0]
+            df.at[index, new_column] = value
             continue  
             
         try:
