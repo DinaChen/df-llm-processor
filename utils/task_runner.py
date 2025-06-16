@@ -16,13 +16,14 @@ def task_run(df : pd.DataFrame,
     # Load or initialize temporary results
     if os.path.exists(temp_path):
         temp_df = pd.read_csv(temp_path)
-        processed_indices = set(temp_df.index)
+        processed_indices = set(temp_df['index'])
     else:
         temp_df = pd.DataFrame(columns=['index', new_column])
         processed_indices = set()
     
     # Process rows with progress tracking
     for index, row in tqdm(df.iterrows(), total=len(df)):
+
         if index in processed_indices:
             continue  
             
@@ -41,6 +42,5 @@ def task_run(df : pd.DataFrame,
         except Exception as e:
             print(f"Skipping row {index} due to error: {str(e)}")
             continue
-        
-    #os.remove(temp_path)  # Clean up temporary file
+
     return df, temp_path
