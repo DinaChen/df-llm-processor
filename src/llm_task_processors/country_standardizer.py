@@ -41,8 +41,8 @@ class CountryNameStandardizer(LlmTaskProcessor):
         self.output_dir.mkdir(parents=True, exist_ok=True)  
 
         self.df = df if isinstance(df, pd.DataFrame) else pd.read_csv(df, index_col=False)
-        self.prompt = prompt
         self.std_country_set = read_standard_country(std_country_set)
+        self.prompt = prompt.format(std_country_string = str(self.std_country_set))
         self.replacement_maps = read_dicts_from_yaml(replacement_maps)
         self.frequent_unsupported = read_yaml(frequent_unsupported)['frequent_unsupported'] if frequent_unsupported is not None else None
         
@@ -81,7 +81,7 @@ class CountryNameStandardizer(LlmTaskProcessor):
     
     def llm_process(self, llm):
 
-        temp_path = self.output_dir / "llm_process_temp.csv"
+        temp_path = self.output_dir / "llm_stdname_temp.csv"
         self.to_process_df, temp_path = task_run(self.to_process_df, 
                                                  llm, 
                                                  self.prompt, 
@@ -96,6 +96,9 @@ class CountryNameStandardizer(LlmTaskProcessor):
 
 
     def postprocess(self):
+
+        #countries_cleaned = 
+        
         pass
 
 
