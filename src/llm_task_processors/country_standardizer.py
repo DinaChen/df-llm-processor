@@ -22,6 +22,8 @@ class CountryNameStandardizer(LlmTaskProcessor):
         df: Union[Path, pd.DataFrame],
         prompt: str,
         std_country_set: Union[Path, set],
+        input_column: str,
+        output_column:str = None,
         replacement_maps: Union[Path, dict] = None,
         frequent_unsupported: Union[Path, list] = None,
     ):
@@ -42,6 +44,10 @@ class CountryNameStandardizer(LlmTaskProcessor):
 
         self.df = df if isinstance(df, pd.DataFrame) else pd.read_csv(df, index_col=False)
         self.std_country_set = read_standard_country(std_country_set)
+
+        self.input_column = input_column
+        self.output_column = output_column if output_column else task_name + '_result'
+
         self.prompt = prompt.format(std_country_string = str(self.std_country_set))
         self.replacement_maps = read_dicts_from_yaml(replacement_maps)
         self.frequent_unsupported = read_yaml(frequent_unsupported)['frequent_unsupported'] if frequent_unsupported is not None else None
@@ -51,9 +57,9 @@ class CountryNameStandardizer(LlmTaskProcessor):
 
         self.to_remove=[]
 
-        self.result_column_list = list(self.df.columns) + ['country_clean']
+        self.result_column_list = list(self.df.columns) + [self.output_column]
     
-    def preprocess(self, input_column: str = 'firm_export_country') -> None:
+    def preprocess(self) -> None:
         """
         Preprocess the input DataFrame to separate already standardized country names from those needing further processing.
        
@@ -64,7 +70,7 @@ class CountryNameStandardizer(LlmTaskProcessor):
 
         def split_valid_toprocess(row):
 
-            countries = self.preprocess_single(str(row[input_column]), 
+            countries = self.preprocess_single(str(row[self.input_column]), 
                                                 self.replacement_maps,
                                                 self.frequent_unsupported)
 
@@ -94,15 +100,15 @@ class CountryNameStandardizer(LlmTaskProcessor):
         self.to_process_df, temp_path = task_run(self.to_process_df, 
                                                  llm, 
                                                  self.prompt, 
-                                                 'to_process',                  # TODO: remove hardcode
-                                                 'country_clean',
+                                                 'to_process',                 
+                                                 self.output_column,
                                                  temp_path)  
 
 
         self.to_remove.append(temp_path)
 
 
-    def postprocess(self, out_column:str='country_clean') -> None:
+    def postprocess(self) -> None:
         """ 
         Check the terms in country_clean column, whether they are in std_country_set, although explicitly required in the prompt.
         Then add the term in valid_already colum to country_clean, then deduplicate. 
@@ -112,19 +118,19 @@ class CountryNameStandardizer(LlmTaskProcessor):
         - self.df: concatenate to_process_df and valid_already_df back together. 
         """
 
-        self.to_process_df[out_column] = self.to_process_df[out_column].apply(lambda x: self.preprocess_single(str(x), self.replacement_maps, self.frequent_unsupported))
-        self.to_process_df[out_column] = self.to_process_df[out_column].apply(lambda x: [c for c in x if c in self.std_country_set])
+        self.to_process_df[self.output_column] = self.to_process_df[self.output_column].apply(lambda x: self.preprocess_single(str(x), self.replacement_maps, self.frequent_unsupported))
+        self.to_process_df[self.output_column] = self.to_process_df[self.output_column].apply(lambda x: [c for c in x if c in self.std_country_set])
 
-        self.to_process_df[out_column] = self.to_process_df['valid_already'] + self.to_process_df[out_column]
-        self.to_process_df[out_column] = self.to_process_df[out_column].apply(lambda x: list(set(x)))
+        self.to_process_df[self.output_column] = self.to_process_df['valid_already'] + self.to_process_df[self.output_column]
+        self.to_process_df[self.output_column] = self.to_process_df[self.output_column].apply(lambda x: list(set(x)))
 
-        self.valid_already_df.loc[:,out_column] = self.valid_already_df['valid_already']
+        self.valid_already_df.loc[:,self.output_column] = self.valid_already_df['valid_already']
 
         self.df = pd.concat([self.to_process_df, self.valid_already_df])
 
         self.df = self.df[self.result_column_list]
-      
-        # TODO: self.df sort by index
+        self.df = self.df.sort_index()
+
 
     @staticmethod
     def preprocess_single(
