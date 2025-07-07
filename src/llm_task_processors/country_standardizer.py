@@ -70,6 +70,7 @@ class CountryNameStandardizer(LlmTaskProcessor):
 
         def split_valid_toprocess(row):
 
+
             countries = self.preprocess_single(str(row[self.input_column]), 
                                                 self.replacement_maps,
                                                 self.frequent_unsupported)
@@ -150,8 +151,8 @@ class CountryNameStandardizer(LlmTaskProcessor):
             list: A list of processed country names after filtering and replacement.
         """
 
-        if pd.isna(country_str):
-            return country_str
+        if pd.isna(country_str) or country_str == 'None':
+            return []
 
         countries = read_list_string_from_df(country_str)
 
